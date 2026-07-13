@@ -5,7 +5,6 @@ import { CourseHistoryPanel } from './components/CourseHistoryPanel';
 import { ProfilePanel } from './components/ProfilePanel';
 import { ProgressRail } from './components/ProgressRail';
 import { RecommendationResults } from './components/RecommendationResults';
-import { sampleProfiles } from './data/catalog';
 import { generateRecommendation } from './lib/recommendationEngine';
 import type { AdviceResponse, CourseStatus, StudentProfile } from './types/advisor';
 
