@@ -70,7 +70,6 @@ export function generateRecommendation(profile: StudentProfile): RecommendationP
   const catalog = courseCatalog[profile.department];
   const completed = new Set(profile.completedCourses);
   const failed = new Set(profile.failedCourses);
-  const dropped = new Set(profile.droppedCourses);
   const attemptedOld = new Set([...profile.failedCourses, ...profile.droppedCourses]);
   const creditLimit = getCreditLimit(profile);
   const target = targetCredits(profile, creditLimit);
