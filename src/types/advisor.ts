@@ -18,7 +18,10 @@ export interface Course {
   prerequisites: string[];
   category: CourseCategory;
   recommendedYear: number;
+  recommendedTerm?: number;
   difficulty: 'foundation' | 'intermediate' | 'advanced';
+  requirementGroup?: 'ged-choice' | 'program-option' | 'cse-elective';
+  requirementLimit?: number;
 }
 
 export interface StudentProfile {

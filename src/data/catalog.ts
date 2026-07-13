@@ -1,4 +1,5 @@
 import type { Course, Department, DepartmentId, StudentProfile } from '../types/advisor.js';
+import { cseCourses } from './cseOfficial.js';
 
 export const departments: Department[] = [
   { id: 'cse', name: 'Computer Science & Engineering', shortName: 'CSE', school: 'School of Science & Engineering', accent: '#0f766e' },
@@ -16,23 +17,7 @@ const shared: Course[] = [
 ];
 
 export const courseCatalog: Record<DepartmentId, Course[]> = {
-  cse: [
-    { code: 'CSE111', title: 'Programming Language I', credits: 3, prerequisites: [], category: 'core', recommendedYear: 1, difficulty: 'foundation' },
-    { code: 'CSE112', title: 'Programming Language I Laboratory', credits: 1, prerequisites: [], category: 'core', recommendedYear: 1, difficulty: 'foundation' },
-    { code: 'CSE211', title: 'Data Structures', credits: 3, prerequisites: ['CSE111'], category: 'core', recommendedYear: 1, difficulty: 'intermediate' },
-    { code: 'CSE212', title: 'Data Structures Laboratory', credits: 1, prerequisites: ['CSE112'], category: 'core', recommendedYear: 1, difficulty: 'intermediate' },
-    { code: 'CSE221', title: 'Object Oriented Programming', credits: 3, prerequisites: ['CSE211'], category: 'core', recommendedYear: 2, difficulty: 'intermediate' },
-    { code: 'CSE222', title: 'Algorithms', credits: 3, prerequisites: ['CSE211'], category: 'core', recommendedYear: 2, difficulty: 'advanced' },
-    { code: 'CSE311', title: 'Database Management Systems', credits: 3, prerequisites: ['CSE211'], category: 'core', recommendedYear: 2, difficulty: 'intermediate' },
-    { code: 'CSE312', title: 'Computer Architecture', credits: 3, prerequisites: ['CSE221'], category: 'core', recommendedYear: 2, difficulty: 'advanced' },
-    { code: 'CSE321', title: 'Operating Systems', credits: 3, prerequisites: ['CSE312'], category: 'core', recommendedYear: 3, difficulty: 'advanced' },
-    { code: 'CSE322', title: 'Computer Networks', credits: 3, prerequisites: ['CSE222'], category: 'core', recommendedYear: 3, difficulty: 'advanced' },
-    { code: 'CSE331', title: 'Software Engineering', credits: 3, prerequisites: ['CSE221'], category: 'core', recommendedYear: 3, difficulty: 'intermediate' },
-    { code: 'CSE411', title: 'Artificial Intelligence', credits: 3, prerequisites: ['CSE222'], category: 'elective', recommendedYear: 3, difficulty: 'advanced' },
-    { code: 'CSE412', title: 'Machine Learning', credits: 3, prerequisites: ['CSE222'], category: 'elective', recommendedYear: 4, difficulty: 'advanced' },
-    { code: 'CSE413', title: 'Cybersecurity', credits: 3, prerequisites: ['CSE322'], category: 'elective', recommendedYear: 4, difficulty: 'advanced' },
-    ...shared,
-  ],
+  cse: cseCourses,
   eee: [
     { code: 'EEE101', title: 'Electrical Circuits I', credits: 3, prerequisites: [], category: 'core', recommendedYear: 1, difficulty: 'foundation' },
     { code: 'EEE102', title: 'Electrical Circuits Laboratory', credits: 1, prerequisites: [], category: 'core', recommendedYear: 1, difficulty: 'foundation' },
@@ -89,9 +74,17 @@ export const courseCatalog: Record<DepartmentId, Course[]> = {
 
 export const sampleProfiles: Record<string, StudentProfile> = {
   onTrack: {
-    name: 'Rahim Ahmed', studentId: '011-211-001', department: 'cse', cgpa: 3.45, creditsCompleted: 72,
+    name: 'Rahim Ahmed', studentId: '011-211-001', department: 'cse', cgpa: 3.45, creditsCompleted: 78,
     trimester: 'Summer', year: 3, probation: false,
-    completedCourses: ['CSE111', 'CSE112', 'CSE211', 'CSE212', 'CSE221', 'CSE222', 'CSE311', 'CSE312', 'ENG101', 'GED102', 'GED201'],
+    completedCourses: [
+      'ENG1011', 'BDS1201', 'URC1103', 'CSE1110', 'MATH1151',
+      'ENG1013', 'CSE1111', 'CSE1112', 'CSE2213',
+      'MATH2183', 'PHY2105', 'PHY2106', 'CSE2215', 'CSE2216',
+      'MATH2201', 'CSE1325', 'CSE1326', 'CSE1115', 'CSE1116',
+      'MATH2205', 'SOC2101', 'CSE2217', 'CSE2218', 'EEE2113',
+      'CSE3521', 'CSE3522', 'EEE2123', 'EEE2124', 'CSE4165',
+      'CSE3313', 'CSE2118', 'BIO3105', 'CSE3411', 'CSE3412',
+    ],
     failedCourses: [], droppedCourses: [],
   },
   probation: {

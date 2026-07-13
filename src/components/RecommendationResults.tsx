@@ -66,6 +66,7 @@ function CourseRecommendation({ item, index }: { item: RecommendedCourse; index:
         <p>{item.reason}</p>
         <div className="course-meta">
           <span>{item.course.credits} credits</span>
+          {item.course.recommendedTerm && <span>Trimester {item.course.recommendedTerm}</span>}
           <span>{item.course.difficulty}</span>
           {item.course.prerequisites.length > 0 && <span>Prerequisites met</span>}
         </div>
