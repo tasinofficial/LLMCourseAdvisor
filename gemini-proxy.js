@@ -1,6 +1,6 @@
 // UIU Course Advisor - Gemini Backend Proxy Server
 // Proxies student recommendation data to Google Gemini API
-// Usage: node gemini-proxy.js
+// Usage: GEMINI_API_KEY=your_key node gemini-proxy.js
 
 const http = require('http');
 const https = require('https');
@@ -9,9 +9,15 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEY = 'AIzaSyDLCmbg6phps1BRzBoGCnq57dG7I2t5xHI';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+if (!GEMINI_API_KEY) {
+  console.error('ERROR: GEMINI_API_KEY environment variable is required');
+  console.error('Get your API key at: https://ai.google.dev/gemini-api/docs/api-key');
+  process.exit(1);
+}
 
 // CORS headers to allow frontend access
 const CORS_HEADERS = {
@@ -21,9 +27,8 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json'
 };
 
-// Build the system prompt for the academic advisor
 function buildSystemPrompt() {
-  return `You are an expert academic advisor at United International University (UIU), Bangladesh. You help students choose courses for the upcoming trimester. You know the following rules:
+  return `You are an expert academic advisor at United International University (UIU), Bangladesh. You help students choose courses for the upcoming trimester. Rules:
 - Trimester system (Spring, Summer, Fall)
 - Minimum 9 credits per trimester for undergraduates, 6 for graduates
 - Maximum 16 credits for CGPA <= 3.50, maximum 19 for CGPA > 3.50
@@ -33,24 +38,15 @@ function buildSystemPrompt() {
 - GED courses must be taken each trimester when offered
 - 80% attendance required to sit for final exam
 - First year students must complete 30 offered credits
-
-Be encouraging but honest. Give practical advice. Format with clear headings and bullet points. Write in a warm, professional tone.`;
+Be encouraging but honest. Format with clear headings and bullet points.`;
 }
 
-// Build the user prompt from student data
 function buildUserPrompt(data) {
   const selectedCourses = data.selected.map(rec =>
     `- ${rec.course.code}: ${rec.course.title} (${rec.course.credits} credits) - ${rec.reason}`
   ).join('\n');
-
-  const retakeList = data.retakes.map(rec =>
-    `- ${rec.course.code}: ${rec.course.title}`
-  ).join('\n') || 'None';
-
-  const gedList = data.gedNeeded.map(c =>
-    `- ${c.code}: ${c.title}`
-  ).join('\n') || 'None';
-
+  const retakeList = data.retakes.map(rec => `- ${rec.course.code}: ${rec.course.title}`).join('\n') || 'None';
+  const gedList = data.gedNeeded.map(c => `- ${c.code}: ${c.title}`).join('\n') || 'None';
   return `Student Profile:
 - Name: ${data.name}
 - Department: ${data.dept.toUpperCase()}
@@ -69,45 +65,25 @@ ${gedList}
 Recommended Courses (${data.totalCredits} credits):
 ${selectedCourses}
 
-Please provide:
-1. A personalized greeting and assessment of their academic standing
-2. Priority ranking of the recommended courses with rationale
-3. Strategic advice for improving (or maintaining) their CGPA
-4. Any warnings about potential pitfalls (e.g., overloading, difficult course combinations)
-5. Encouragement and a reminder to verify with their human advisor`;
+Please provide personalized advice with priority ranking, strategic advice, warnings, and encouragement.`;
 }
 
-// Parse JSON body from request
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
-      try {
-        resolve(JSON.parse(body));
-      } catch (e) {
-        reject(new Error('Invalid JSON'));
-      }
+      try { resolve(JSON.parse(body)); } catch (e) { reject(new Error('Invalid JSON')); }
     });
   });
 }
 
-// Call Gemini API
 async function callGemini(studentData) {
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(studentData);
-
   const payload = JSON.stringify({
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1200
-    }
+    contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
   });
 
   return new Promise((resolve, reject) => {
@@ -123,126 +99,67 @@ async function callGemini(studentData) {
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.error) {
-            reject(new Error(json.error.message || 'Gemini API error'));
-            return;
-          }
-          // Extract text from Gemini response
+          if (json.error) { reject(new Error(json.error.message || 'Gemini API error')); return; }
           const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
           resolve({ text, usage: json.usageMetadata });
-        } catch (e) {
-          reject(new Error('Failed to parse Gemini response'));
-        }
+        } catch (e) { reject(new Error('Failed to parse Gemini response')); }
       });
     });
-
     req.on('error', reject);
     req.write(payload);
     req.end();
   });
 }
 
-// Static file serving for the frontend
 function serveStatic(reqPath, res) {
   const filePath = path.join(__dirname, reqPath);
   fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404, CORS_HEADERS);
-      res.end(JSON.stringify({ error: 'Not found' }));
-      return;
-    }
-
+    if (err) { res.writeHead(404, CORS_HEADERS); res.end(JSON.stringify({ error: 'Not found' })); return; }
     const ext = path.extname(filePath);
-    const contentType = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.json': 'application/json'
-    }[ext] || 'application/octet-stream';
-
+    const contentType = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json' }[ext] || 'application/octet-stream';
     res.writeHead(200, { ...CORS_HEADERS, 'Content-Type': contentType });
     res.end(data);
   });
 }
 
-// Main server
 const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, CORS_HEADERS);
-    res.end();
-    return;
-  }
+  if (req.method === 'OPTIONS') { res.writeHead(204, CORS_HEADERS); res.end(); return; }
 
-  // Health check
   if (pathname === '/health' && req.method === 'GET') {
     res.writeHead(200, CORS_HEADERS);
     res.end(JSON.stringify({ status: 'ok', service: 'UIU Course Advisor - Gemini Proxy' }));
     return;
   }
 
-  // API endpoint: /api/advisor
   if (pathname === '/api/advisor' && req.method === 'POST') {
     try {
       const body = await parseBody(req);
       const result = await callGemini(body);
-
       res.writeHead(200, CORS_HEADERS);
-      res.end(JSON.stringify({
-        success: true,
-        advisor: result.text,
-        usage: result.usage
-      }));
+      res.end(JSON.stringify({ success: true, advisor: result.text, usage: result.usage }));
     } catch (error) {
       console.error('Error:', error.message);
       res.writeHead(500, CORS_HEADERS);
-      res.end(JSON.stringify({
-        success: false,
-        error: error.message,
-        fallback: true
-      }));
+      res.end(JSON.stringify({ success: false, error: error.message, fallback: true }));
     }
     return;
   }
 
-  // Serve static files
-  if (pathname === '/' || pathname === '/index.html') {
-    serveStatic('uiu-course-advisor.html', res);
-    return;
-  }
+  if (pathname === '/' || pathname === '/index.html') { serveStatic('index.html', res); return; }
+  if (pathname === '/gemini-proxy.js') { serveStatic('gemini-proxy.js', res); return; }
 
-  if (pathname === '/gemini-proxy.js') {
-    serveStatic('gemini-proxy.js', res);
-    return;
-  }
-
-  // 404
   res.writeHead(404, CORS_HEADERS);
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
 server.listen(PORT, () => {
-  console.log(`================================================`);
-  console.log(`UIU Course Advisor - Gemini Backend Proxy`);
-  console.log(`================================================`);
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`UIU Course Advisor - Gemini Backend Proxy running on http://localhost:${PORT}`);
   console.log(`API endpoint: POST http://localhost:${PORT}/api/advisor`);
   console.log(`Health check: GET http://localhost:${PORT}/health`);
-  console.log(`Frontend: http://localhost:${PORT}/`);
-  console.log(`================================================`);
   console.log(`Model: ${GEMINI_MODEL}`);
-  console.log(`API Key configured: ${GEMINI_API_KEY ? 'Yes' : 'No'}`);
-  console.log(`================================================`);
 });
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\nShutting down server...');
-  server.close(() => {
-    console.log('Server closed.');
-    process.exit(0);
-  });
-});
+process.on('SIGINT', () => { console.log('\nShutting down...'); server.close(() => process.exit(0)); });
