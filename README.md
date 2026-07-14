@@ -14,6 +14,7 @@ A policy-first, AI-assisted course planning application for United International
 - Zod request validation and department-level course-code validation
 - Helmet, CORS policy, request-size limits, and rate limiting
 - Responsive, accessible multi-step advising interface
+- Completed credits recalculate instantly from courses marked Passed
 - Loading, offline fallback, validation, and error states
 - Unit and API tests
 

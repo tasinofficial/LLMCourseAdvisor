@@ -83,18 +83,18 @@ export function ProfilePanel({ profile, onChange, onLoadSample }: ProfilePanelPr
         </label>
 
         <label className="field">
-          <span>Credits completed</span>
+          <span>Credits completed <em className="auto-label">Auto</em></span>
           <div className="input-shell">
             <BookOpenCheck size={17} aria-hidden="true" />
             <input
+              className="calculated-input"
               type="number"
-              inputMode="numeric"
-              min="0"
-              max="250"
               value={profile.creditsCompleted}
-              onChange={(event) => onChange('creditsCompleted', Number(event.target.value))}
+              readOnly
+              aria-readonly="true"
             />
           </div>
+          <small className="field-hint" aria-live="polite">Updates instantly from courses marked Passed.</small>
         </label>
 
         <label className="field">

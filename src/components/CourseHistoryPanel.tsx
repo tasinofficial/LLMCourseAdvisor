@@ -52,7 +52,7 @@ export function CourseHistoryPanel({ profile, onStatusChange }: CourseHistoryPan
             <p>Mark each attempted course once. Prerequisites use completed courses only.</p>
           </div>
         </div>
-        <span className="selection-count">{selectedCount} marked</span>
+        <span className="selection-count" aria-live="polite">{selectedCount} marked · {profile.creditsCompleted} credits passed</span>
       </div>
 
       {profile.department === 'cse' && (
