@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, Circle, MinusCircle, RotateCcw, Search } from 'lucide-react';
+import { BadgeCheck, CheckCircle2, Circle, ExternalLink, MinusCircle, RotateCcw, Search } from 'lucide-react';
 import { courseCatalog } from '../data/catalog';
+import { CSE_COURSE_PLAN_SOURCE, cseCurriculumMeta } from '../data/cseOfficial';
 import type { CourseCategory, CourseStatus, StudentProfile } from '../types/advisor';
 
 interface CourseHistoryPanelProps {
@@ -54,6 +55,19 @@ export function CourseHistoryPanel({ profile, onStatusChange }: CourseHistoryPan
         <span className="selection-count">{selectedCount} marked</span>
       </div>
 
+      {profile.department === 'cse' && (
+        <div className="official-source-banner">
+          <BadgeCheck size={18} aria-hidden="true" />
+          <div>
+            <strong>Official UIU CSE course plan</strong>
+            <span>{catalog.length} catalog courses · {cseCurriculumMeta.degreeCredits}-credit degree plan · 211 onwards</span>
+          </div>
+          <a href={CSE_COURSE_PLAN_SOURCE} target="_blank" rel="noopener noreferrer">
+            Source <ExternalLink size={14} />
+          </a>
+        </div>
+      )}
+
       <div className="history-toolbar">
         <label className="search-field">
           <Search size={17} aria-hidden="true" />
@@ -90,6 +104,8 @@ export function CourseHistoryPanel({ profile, onStatusChange }: CourseHistoryPan
                   <div>
                     <strong>{course.code}</strong>
                     <span className={`category-chip category-chip--${course.category}`}>{course.category}</span>
+                    {course.recommendedTerm && <span className="term-chip">T{course.recommendedTerm}</span>}
+                    {course.requirementGroup && <span className="choice-chip">choice</span>}
                   </div>
                   <p>{course.title}</p>
                   {course.prerequisites.length > 0 && <small>Requires {course.prerequisites.join(', ')}</small>}

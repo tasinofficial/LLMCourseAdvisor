@@ -35,6 +35,11 @@ function allPrerequisitesMet(course: Course, completed: Set<string>) {
   return course.prerequisites.every((prerequisite) => completed.has(prerequisite));
 }
 
+function currentProgramTerm(profile: StudentProfile) {
+  const offset = profile.trimester === 'Spring' ? 1 : profile.trimester === 'Summer' ? 2 : 3;
+  return ((profile.year - 1) * 3) + offset;
+}
+
 function targetCredits(profile: StudentProfile, limit: CreditLimit) {
   if (profile.probation) return limit.max;
   if (profile.cgpa < 2.5) return Math.min(12, limit.max);
@@ -46,18 +51,36 @@ function asRecommendation(course: Course, type: RecommendedCourse['type'], prior
   return { course, type, priority, reason, warnings: [] };
 }
 
+type RequirementGroup = NonNullable<Course['requirementGroup']>;
+
 function pickWithinCreditLimit(
   candidates: RecommendedCourse[],
   maxCredits: number,
   initiallySelected: RecommendedCourse[] = [],
+  fulfilledGroupCounts: ReadonlyMap<RequirementGroup, number> = new Map(),
 ) {
   const selected = [...initiallySelected];
   const selectedCodes = new Set(selected.map((item) => item.course.code));
+  const groupCounts = new Map(fulfilledGroupCounts);
   let total = selected.reduce((sum, item) => sum + item.course.credits, 0);
+
+  for (const item of selected) {
+    if (item.course.requirementGroup) {
+      groupCounts.set(item.course.requirementGroup, (groupCounts.get(item.course.requirementGroup) ?? 0) + 1);
+    }
+  }
 
   for (const candidate of candidates) {
     if (selectedCodes.has(candidate.course.code)) continue;
     if (total + candidate.course.credits > maxCredits) continue;
+
+    const group = candidate.course.requirementGroup;
+    if (group && candidate.course.requirementLimit) {
+      const fulfilled = groupCounts.get(group) ?? 0;
+      if (fulfilled >= candidate.course.requirementLimit) continue;
+      groupCounts.set(group, fulfilled + 1);
+    }
+
     selected.push(candidate);
     selectedCodes.add(candidate.course.code);
     total += candidate.course.credits;
@@ -70,9 +93,15 @@ export function generateRecommendation(profile: StudentProfile): RecommendationP
   const catalog = courseCatalog[profile.department];
   const completed = new Set(profile.completedCourses);
   const failed = new Set(profile.failedCourses);
-  const dropped = new Set(profile.droppedCourses);
+  const fulfilledGroupCounts = new Map<RequirementGroup, number>();
+  for (const course of catalog) {
+    if (completed.has(course.code) && course.requirementGroup) {
+      fulfilledGroupCounts.set(course.requirementGroup, (fulfilledGroupCounts.get(course.requirementGroup) ?? 0) + 1);
+    }
+  }
   const attemptedOld = new Set([...profile.failedCourses, ...profile.droppedCourses]);
   const creditLimit = getCreditLimit(profile);
+  const currentTerm = currentProgramTerm(profile);
   const target = targetCredits(profile, creditLimit);
   const excluded: ExcludedCourse[] = [];
 
@@ -97,6 +126,16 @@ export function generateRecommendation(profile: StudentProfile): RecommendationP
       continue;
     }
 
+    const scheduledLater = course.recommendedTerm
+      ? course.recommendedTerm > currentTerm
+      : course.recommendedYear > profile.year;
+    if (scheduledLater) {
+      excluded.push({ course, reason: course.recommendedTerm
+        ? `Officially sequenced for trimester ${course.recommendedTerm}.`
+        : `Recommended from program year ${course.recommendedYear}.` });
+      continue;
+    }
+
     if (!allPrerequisitesMet(course, completed)) {
       const missing = course.prerequisites.filter((prerequisite) => !completed.has(prerequisite));
       excluded.push({ course, reason: `Missing prerequisite${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.` });
@@ -104,25 +143,40 @@ export function generateRecommendation(profile: StudentProfile): RecommendationP
     }
 
     if (course.category === 'ged') {
-      eligible.push(asRecommendation(course, 'ged', 2, 'Outstanding general-education requirement and eligible now.'));
+      eligible.push(asRecommendation(
+        course,
+        'ged',
+        course.requirementGroup === 'ged-choice' ? 3 : 2,
+        course.requirementGroup === 'ged-choice'
+          ? 'Eligible choice within the official General Education optional requirement.'
+          : 'Outstanding General Education or university requirement and eligible now.',
+      ));
     } else if (course.category === 'core') {
-      const onSequence = course.recommendedYear <= profile.year;
+      const onSequence = course.recommendedTerm
+        ? course.recommendedTerm <= currentTerm
+        : course.recommendedYear <= profile.year;
       eligible.push(asRecommendation(
         course,
         'core',
         3,
-        onSequence ? 'Required core course aligned with current program progress.' : 'Eligible core course that advances the prerequisite chain.',
+        onSequence ? 'Required core course aligned with the official trimester sequence.' : 'Eligible core course that advances the prerequisite chain.',
       ));
     } else {
-      eligible.push(asRecommendation(course, 'elective', 4, 'Eligible elective that fits the current prerequisite profile.'));
+      const reason = course.requirementGroup === 'program-option'
+        ? 'Eligible choice within the official programming optional requirement.'
+        : course.requirementGroup === 'cse-elective'
+          ? 'Eligible choice within the official CSE specialization elective requirement.'
+          : 'Eligible elective that fits the current prerequisite profile.';
+      eligible.push(asRecommendation(course, 'elective', 4, reason));
     }
   }
 
-  retakes.sort((a, b) => a.course.recommendedYear - b.course.recommendedYear || a.course.code.localeCompare(b.course.code));
+  const sequenceNumber = (course: Course) => course.recommendedTerm ?? (course.recommendedYear * 3);
+  retakes.sort((a, b) => sequenceNumber(a.course) - sequenceNumber(b.course) || a.course.code.localeCompare(b.course.code));
   eligible.sort((a, b) =>
     a.priority - b.priority
     || Number(a.course.recommendedYear > profile.year) - Number(b.course.recommendedYear > profile.year)
-    || a.course.recommendedYear - b.course.recommendedYear
+    || sequenceNumber(a.course) - sequenceNumber(b.course)
     || a.course.code.localeCompare(b.course.code),
   );
 
@@ -132,9 +186,9 @@ export function generateRecommendation(profile: StudentProfile): RecommendationP
     const oldCount = recommended.length;
     const maximumNewCourses = oldCount > 0 ? Math.floor(oldCount / 2) : 2;
     const probationEligible = eligible.slice(0, maximumNewCourses);
-    recommended = pickWithinCreditLimit(probationEligible, creditLimit.max, recommended);
+    recommended = pickWithinCreditLimit(probationEligible, creditLimit.max, recommended, fulfilledGroupCounts);
   } else {
-    recommended = pickWithinCreditLimit(eligible, target, recommended);
+    recommended = pickWithinCreditLimit(eligible, target, recommended, fulfilledGroupCounts);
   }
 
   const totalCredits = recommended.reduce((sum, item) => sum + item.course.credits, 0);

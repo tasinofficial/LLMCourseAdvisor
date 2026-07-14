@@ -27,7 +27,7 @@ describe('advisor API', () => {
   it('rejects conflicting course states', async () => {
     const profile = {
       ...sampleProfiles.onTrack,
-      failedCourses: ['CSE111'],
+      failedCourses: ['CSE1110'],
     };
     const response = await request(createApp()).post('/api/recommendations').send(profile);
     expect(response.status).toBe(400);

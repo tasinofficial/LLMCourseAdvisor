@@ -99,7 +99,7 @@ Recommended deployment controls:
 - Never commit `.env` or API keys.
 - The repository's previously exposed Google API key must remain revoked.
 - GitHub history may continue to show the old value; revocation is the essential control. History rewriting can remove the string but cannot make an exposed key safe again.
-- The server omits student IDs from Gemini prompts.
+- The server omits direct student identifiers from Gemini prompts.
 - The LLM is not trusted to make eligibility decisions.
 
 ## Project structure
@@ -118,6 +118,10 @@ server/
 tests/                  Unit and API tests
 ```
 
-## Data disclaimer
+## Curriculum data
 
-The bundled catalog is representative sample data created for prototyping. Do not use it for real registration until UIU departments and the Registrar verify every course code, prerequisite, credit value, repeat rule, offering, and program requirement.
+The CSE catalog is imported from the official [UIU CSE course-plan page](https://cse.uiu.ac.bd/ug-program/course-plan/) and contains 97 unique listed courses. Applying the page's explicit choice rules—two General Education options, one programming option, and five CSE electives—reconciles the catalog to the stated 137-credit degree requirement.
+
+The source page contains internal inconsistencies. The application records these reconciliation decisions in `src/data/cseOfficial.ts`, including the repeated DSA-I codes in the trimester-five table and the mismatch between the stated any-two GED rule and three GED placeholders in the term plan.
+
+Other department catalogs remain representative sample data. Before real registration use, UIU departments and the Registrar should verify every course code, prerequisite, credit value, repeat rule, curriculum version, offering, and program requirement.

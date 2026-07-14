@@ -539,6 +539,48 @@ main {
   white-space: nowrap;
 }
 
+.official-source-banner {
+  margin-top: 20px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--brand);
+  border: 1px solid #bcdacf;
+  border-radius: 13px;
+  background: var(--brand-soft);
+}
+
+.official-source-banner strong,
+.official-source-banner span {
+  display: block;
+}
+
+.official-source-banner strong {
+  font-size: 0.78rem;
+}
+
+.official-source-banner span {
+  margin-top: 2px;
+  color: #4b6f64;
+  font-size: 0.68rem;
+}
+
+.official-source-banner a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--brand);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.official-source-banner a:hover {
+  text-decoration: underline;
+}
+
 .history-toolbar {
   margin: 22px 0 14px;
   display: flex;
@@ -692,6 +734,26 @@ main {
 
 .category-chip {
   padding: 4px 6px;
+}
+
+.term-chip,
+.choice-chip {
+  padding: 4px 6px;
+  border-radius: 999px;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.term-chip {
+  color: #344054;
+  background: #eef2f6;
+}
+
+.choice-chip {
+  color: #9a6700;
+  background: #fff5d9;
 }
 
 .category-chip--core,
