@@ -440,6 +440,33 @@ main {
   font-weight: 700;
 }
 
+.auto-label {
+  margin-left: 5px;
+  padding: 2px 5px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field-hint {
+  color: var(--subtle);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
+.field input.calculated-input {
+  color: var(--brand-strong);
+  background: var(--brand-soft);
+  border-color: #bcdacf;
+  font-weight: 800;
+  cursor: default;
+}
+
 .field input,
 .field select,
 .search-field input {

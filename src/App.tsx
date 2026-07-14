@@ -5,6 +5,7 @@ import { CourseHistoryPanel } from './components/CourseHistoryPanel';
 import { ProfilePanel } from './components/ProfilePanel';
 import { ProgressRail } from './components/ProgressRail';
 import { RecommendationResults } from './components/RecommendationResults';
+import { calculateCreditsFromCourseHistory } from './lib/credits';
 import { generateRecommendation } from './lib/recommendationEngine';
 import type { AdviceResponse, CourseStatus, StudentProfile } from './types/advisor';
 
@@ -90,7 +91,14 @@ export default function App() {
   const updateProfile = <K extends keyof StudentProfile>(key: K, value: StudentProfile[K]) => {
     setProfile((current) => {
       if (key === 'department' && value !== current.department) {
-        return { ...current, department: value as StudentProfile['department'], completedCourses: [], failedCourses: [], droppedCourses: [] };
+        return {
+          ...current,
+          department: value as StudentProfile['department'],
+          creditsCompleted: 0,
+          completedCourses: [],
+          failedCourses: [],
+          droppedCourses: [],
+        };
       }
       return { ...current, [key]: value };
     });
@@ -109,6 +117,7 @@ export default function App() {
       if (status === 'completed') next.completedCourses = [...next.completedCourses, courseCode];
       if (status === 'failed') next.failedCourses = [...next.failedCourses, courseCode];
       if (status === 'dropped') next.droppedCourses = [...next.droppedCourses, courseCode];
+      next.creditsCompleted = calculateCreditsFromCourseHistory(next.department, next);
       return next;
     });
     setResponse(null);
@@ -116,7 +125,9 @@ export default function App() {
   };
 
   const loadSample = (sample: StudentProfile) => {
-    setProfile(structuredClone(sample));
+    const normalized = structuredClone(sample);
+    normalized.creditsCompleted = calculateCreditsFromCourseHistory(normalized.department, normalized);
+    setProfile(normalized);
     setResponse(null);
     setError(null);
   };
@@ -194,7 +205,9 @@ export default function App() {
             <div className="workspace-actions">
               <button type="button" className="button button--quiet" onClick={reset}><RotateCcw size={16} /> Reset</button>
               <div className="action-note">
-                {formIssue ? <span>{formIssue}</span> : <span>{markedCourses} course{markedCourses === 1 ? '' : 's'} marked</span>}
+                {formIssue
+                  ? <span>{formIssue}</span>
+                  : <span>{markedCourses} course{markedCourses === 1 ? '' : 's'} marked · {profile.creditsCompleted} passed credits</span>}
               </div>
               <button type="button" className="button button--primary button--large" onClick={generate} disabled={isLoading}>
                 Generate advising plan <ArrowRight size={17} />

@@ -88,13 +88,13 @@ export const sampleProfiles: Record<string, StudentProfile> = {
     failedCourses: [], droppedCourses: [],
   },
   probation: {
-    name: 'Sara Khatun', studentId: '111-222-015', department: 'bba', cgpa: 1.85, creditsCompleted: 32,
+    name: 'Sara Khatun', studentId: '111-222-015', department: 'bba', cgpa: 1.85, creditsCompleted: 15,
     trimester: 'Summer', year: 2, probation: true,
     completedCourses: ['BBA101', 'BBA102', 'BBA103', 'ENG101', 'GED102'],
     failedCourses: ['BBA201', 'BBA202'], droppedCourses: ['BBA203'],
   },
   highPerformer: {
-    name: 'Hasan Mahmud', studentId: '021-231-042', department: 'eee', cgpa: 3.72, creditsCompleted: 48,
+    name: 'Hasan Mahmud', studentId: '021-231-042', department: 'eee', cgpa: 3.72, creditsCompleted: 20,
     trimester: 'Summer', year: 3, probation: false,
     completedCourses: ['EEE101', 'EEE102', 'EEE201', 'EEE202', 'EEE211', 'EEE301', 'ENG101', 'GED102'],
     failedCourses: [], droppedCourses: [],
